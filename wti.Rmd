@@ -1,0 +1,88 @@
+---
+title: "WTI"
+author: "Csepregi_Englert"
+date: '2019 11 17 '
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r setup}
+library(rstudioapi)
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(corrr)
+library(rmarkdown)
+
+#loading all functions from Beadando-functions-new
+paste0(getwd(), '/Beadando-functions-new.r') %>% source(.)
+
+
+##### DATA PREPARATION #############
+
+#A WTI arfolyamokat tartalmazo excel file betoltese
+wti <- loadData()
+```
+```{r}
+#A parameterek beolvasasa, megvaltoztathatoak a fuggvenyes halmazban
+AnalysisInputs <- CrossCorrInput()
+
+#A megadott feltetelekre a WTI alap adatbazis leszukitese
+RawData <- PrepareDatabase(wti,AnalysisInputs[[2]],AnalysisInputs[[3]],AnalysisInputs[[1]])
+
+#Az idosor egyszeri differenciazasa, hogy stacioner legyen. (az utolso sor torlesre kerul a RawData-bol)
+usedata <- TSDiff(RawData)
+```
+
+
+```{r}
+#A dinamikus keresztkorrelacio kiszamolasa majd eltarolasa egy data.frame-ba, melynek az oszlopai (Date, (CL1,CL2), (CL1,CL3)...)
+Results<-CrossCorrAnalysis(usedata,AnalysisInputs[[5]],AnalysisInputs[[4]])
+```
+
+```{r}
+#A Results data.frame datum oszlopa numerikus alakbol datum formatumba atirasa
+Results <- Results %>%
+  tidyr::as_tibble() %>%
+  dplyr::mutate(Date=as.Date(Date,origin="1970-01-01"))
+
+
+
+####### OPTIONS ##########
+
+#Run this to see the correlation between two assets over time, eg.:grafikon$`(CL1,CL2) 
+dinCorrelationPlot(Results,Results$`(CL1,CL3)`)
+
+
+#Run this to see minimum, maximum, average over all assets as a function of time
+minMaxMean <- minMaxMeanCalculator(Results)
+minMaxMeanPlot(minMaxMean)
+
+
+#Run this to see correlation network for given day
+correlationNetworkPlot("2011-06-24")
+
+```
+
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r,fig.margin=TRUE}
+minMaxMeanPlot(minMaxMean)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
